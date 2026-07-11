@@ -36,6 +36,7 @@ const allowedOrigins = [
   // Always allow common local dev ports so seed/local dev works out of box
   'http://localhost:3000',
   'http://localhost:3100',
+  'https://asp-cranes-frontend.vercel.app'
 ].filter(Boolean);
 
 app.use(cors({
