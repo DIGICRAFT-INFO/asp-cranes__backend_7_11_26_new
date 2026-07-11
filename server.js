@@ -59,7 +59,12 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 // NOTE: this requires a persistent filesystem. It works on a VPS or any
 // "always-on" Node host. It will NOT persist on serverless platforms like
 // Vercel, since their filesystem is read-only/ephemeral outside of /tmp.
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static file serving for local dev (persistent filesystem).
+// On Vercel, files are served via GET /api/upload/file/:folder/:filename proxy.
+const IS_VERCEL = !!process.env.VERCEL || process.env.NODE_ENV === 'production';
+if (!IS_VERCEL) {
+  app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+}
 
 // ─── MongoDB Connection (cached across serverless invocations) ───────────────
 let isConnected = false;
