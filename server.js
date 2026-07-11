@@ -54,6 +54,9 @@ app.use(cors({
 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// NOTE: Do NOT apply express.json/urlencoded to /api/upload routes —
+// multer handles multipart/form-data parsing itself, and applying body-parser
+// before multer on upload routes will consume the stream and return empty files.
 
 // Static folder for uploaded images/videos/documents (see routes/upload.js).
 // NOTE: this requires a persistent filesystem. It works on a VPS or any
