@@ -35,10 +35,51 @@ router.post('/login', [
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password +refreshToken');
-    if (!user || !(await user.comparePassword(password))) {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const ua = req.get('User-Agent') || 'unknown';
+
+    const user = await User.findOne({ email }).select('+password +refreshToken +loginAttempts +lockUntil');
+    if (!user) {
+      console.error(`[AUDIT] LOGIN_FAILED | email=${email} | ip=${ip} | ua=${ua} | reason=user_not_found | ts=${new Date().toISOString()}`);
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
+
+    // ─── Server-side lockout check ──────────────────────────────────────────
+    if (user.isLocked) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      console.error(`[AUDIT] LOGIN_BLOCKED | userId=${user._id} | email=${email} | ip=${ip} | lockUntil=${user.lockUntil.toISOString()} | ts=${new Date().toISOString()}`);
+      return res.status(429).json({
+        success: false,
+        message: `Account locked due to too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`,
+        code: 'ACCOUNT_LOCKED'
+      });
+    }
+
+    const passwordMatch = await user.comparePassword(password);
+    if (!passwordMatch) {
+      // Increment attempts
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      const attemptsLeft = Math.max(0, 5 - user.loginAttempts);
+
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+        console.error(`[AUDIT] ACCOUNT_LOCKED | userId=${user._id} | email=${email} | ip=${ip} | lockUntil=${user.lockUntil.toISOString()} | ts=${new Date().toISOString()}`);
+        return res.status(429).json({
+          success: false,
+          message: 'Account locked due to too many failed attempts. Try again in 15 minutes.',
+          code: 'ACCOUNT_LOCKED'
+        });
+      }
+
+      await user.save();
+      console.error(`[AUDIT] LOGIN_FAILED | userId=${user._id} | email=${email} | ip=${ip} | ua=${ua} | attempts=${user.loginAttempts} | attemptsLeft=${attemptsLeft} | ts=${new Date().toISOString()}`);
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${attemptsLeft} attempt${attemptsLeft !== 1 ? 's' : ''} remaining before lockout.`
+      });
+    }
+
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
@@ -46,10 +87,18 @@ router.post('/login', [
         code: 'ACCOUNT_REVOKED'
       });
     }
+
+    // ─── Successful login: reset lockout fields ──────────────────────────────
+    user.loginAttempts = 0;
+    user.lockUntil = null;
+
     const { accessToken, refreshToken } = generateTokens(user._id);
     user.refreshToken = refreshToken;
     user.lastLogin = new Date();
     await user.save();
+
+    console.log(`[AUDIT] LOGIN_SUCCESS | userId=${user._id} | email=${email} | ip=${ip} | ua=${ua} | ts=${new Date().toISOString()}`);
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -92,6 +141,10 @@ router.post('/refresh', async (req, res) => {
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
     user.refreshToken = newRefreshToken;
     await user.save();
+
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    console.log(`[AUDIT] TOKEN_REFRESHED | userId=${user._id} | ip=${ip} | ts=${new Date().toISOString()}`);
+
     res.json({ success: true, data: { accessToken, refreshToken: newRefreshToken } });
   } catch (err) {
     res.status(401).json({ success: false, message: 'Invalid or expired refresh token.' });
@@ -145,7 +198,10 @@ router.put('/profile', protect, [
 // ─── PUT /api/auth/change-password ────────────────────────────────────────────
 router.put('/change-password', protect, [
   body('currentPassword').notEmpty().withMessage('Current password required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 chars'),
+  body('newPassword')
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
+    .withMessage('New password must include uppercase, lowercase, a digit, and a special character (!@#$%^&*)'),
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
@@ -156,6 +212,10 @@ router.put('/change-password', protect, [
     }
     user.password = req.body.newPassword;
     await user.save();
+
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    console.log(`[AUDIT] PASSWORD_CHANGED | userId=${user._id} | ip=${ip} | ts=${new Date().toISOString()}`);
+
     res.json({ success: true, message: 'Password changed successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -176,7 +236,10 @@ router.get('/admins', protect, authorize('superadmin'), async (req, res) => {
 router.post('/admins', protect, authorize('superadmin'), [
   body('name').trim().notEmpty().withMessage('Name required'),
   body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 chars'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
+    .withMessage('Password must include uppercase, lowercase, a digit, and a special character (!@#$%^&*)'),
   body('allowedPages').optional().isArray(),
 ], async (req, res) => {
   const errors = validationResult(req);

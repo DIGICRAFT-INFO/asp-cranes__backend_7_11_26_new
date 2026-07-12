@@ -6,8 +6,30 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const app = express();
+
+// ─── JWT Secret Strength Validation ──────────────────────────────────────────
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('🔐 [FATAL SECURITY WARNING] JWT_SECRET is missing or shorter than 32 characters!');
+  console.error('🔐 Run: openssl rand -hex 32  and set the result as JWT_SECRET in your .env file');
+}
+if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 32) {
+  console.error('🔐 [FATAL SECURITY WARNING] JWT_REFRESH_SECRET is missing or shorter than 32 characters!');
+  console.error('🔐 Run: openssl rand -hex 32  and set the result as JWT_REFRESH_SECRET in your .env file');
+}
+
+// ─── Helmet Security Headers ──────────────────────────────────────────────────
+app.use(helmet());
+// HSTS: only in production (Vercel handles TLS termination)
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet.hsts({
+    maxAge: 31536000,
+    includeSubDomains: true,
+  }));
+}
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 const limiter = rateLimit({
@@ -31,12 +53,17 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
   process.env.HOSTINGER_URL,
-  // Dev fallback — comma-separated list of extra origins via env
-  ...(process.env.DEV_ORIGINS ? process.env.DEV_ORIGINS.split(',').map(o => o.trim()) : []),
-  // Always allow common local dev ports so seed/local dev works out of box
-  'http://localhost:3000',
-  'http://localhost:3100',
-  'https://asp-cranes-frontend.vercel.app'
+  'https://asp-cranes-frontend.vercel.app',
+  // Dev origins only included in non-production environments
+  ...(process.env.NODE_ENV !== 'production'
+    ? [
+        // Extra origins via env (comma-separated)
+        ...(process.env.DEV_ORIGINS ? process.env.DEV_ORIGINS.split(',').map(o => o.trim()) : []),
+        // Common local dev ports
+        'http://localhost:3000',
+        'http://localhost:3100',
+      ]
+    : []),
 ].filter(Boolean);
 
 app.use(cors({
@@ -57,6 +84,10 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 // NOTE: Do NOT apply express.json/urlencoded to /api/upload routes —
 // multer handles multipart/form-data parsing itself, and applying body-parser
 // before multer on upload routes will consume the stream and return empty files.
+
+// ─── NoSQL Injection Sanitization ────────────────────────────────────────────
+// Strips keys beginning with '$' and containing '.' from req.body, req.query, req.params
+app.use(mongoSanitize());
 
 // Static folder for uploaded images/videos/documents (see routes/upload.js).
 // NOTE: this requires a persistent filesystem. It works on a VPS or any

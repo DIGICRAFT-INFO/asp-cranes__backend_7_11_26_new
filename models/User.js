@@ -23,7 +23,15 @@ const userSchema = new mongoose.Schema({
   // track when access was granted/revoked
   accessGrantedAt: { type: Date },
   accessRevokedAt: { type: Date },
+  // ─── Account Lockout ───────────────────────────────────────────────────────
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date, default: null },
 }, { timestamps: true });
+
+// ─── isLocked virtual ─────────────────────────────────────────────────────────
+userSchema.virtual('isLocked').get(function () {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+});
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
