@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Crane = require('../models/Crane');
 const { protect } = require('../middleware/auth');
+const { broadcastNotification } = require('../utils/notify');
 
 // GET /api/cranes - Public
 router.get('/', async (req, res) => {
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
     const skip = (page - 1) * limit;
     const [cranes, total] = await Promise.all([
       Crane.find(query).populate('categories').sort({ order: 1, createdAt: -1 }).skip(skip).limit(Number(limit)),
-      Crane.countDocuments(query)
+      Crane.countDocuments(query),
     ]);
     res.json({ success: true, data: cranes, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / limit) } });
   } catch (err) {
@@ -50,6 +51,14 @@ router.get('/:slug', async (req, res) => {
 router.post('/', protect, async (req, res) => {
   try {
     const crane = await (await Crane.create(req.body)).populate('categories');
+    broadcastNotification({
+      type: 'crane_created',
+      title: '🏗️ New Crane Added',
+      message: `${req.user.name} added a new crane: "${crane.name}".`,
+      actor: req.user._id,
+      page: 'cranes',
+      meta: { craneId: crane._id, craneName: crane.name },
+    });
     res.status(201).json({ success: true, message: 'Crane created successfully', data: crane });
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ success: false, message: 'Crane with this name already exists.' });
@@ -62,6 +71,14 @@ router.put('/:id', protect, async (req, res) => {
   try {
     const crane = await Crane.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate('categories');
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
+    broadcastNotification({
+      type: 'crane_updated',
+      title: '🏗️ Crane Updated',
+      message: `${req.user.name} updated crane: "${crane.name}".`,
+      actor: req.user._id,
+      page: 'cranes',
+      meta: { craneId: crane._id, craneName: crane.name },
+    });
     res.json({ success: true, message: 'Crane updated successfully', data: crane });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -73,6 +90,14 @@ router.delete('/:id', protect, async (req, res) => {
   try {
     const crane = await Crane.findByIdAndDelete(req.params.id);
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
+    broadcastNotification({
+      type: 'crane_deleted',
+      title: '🗑️ Crane Deleted',
+      message: `${req.user.name} deleted crane: "${crane.name}".`,
+      actor: req.user._id,
+      page: 'cranes',
+      meta: { craneName: crane.name },
+    });
     res.json({ success: true, message: 'Crane deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
