@@ -173,6 +173,20 @@ const contactSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Contact = mongoose.model('Contact', contactSchema);
 
+// ─── Career Application Model ─────────────────────────────────────────────────
+const careerApplicationSchema = new mongoose.Schema({
+  careerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Career', required: true },
+  jobTitle: { type: String, required: true },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
+  phone: { type: String, trim: true },
+  coverLetter: { type: String, required: true },
+  isRead: { type: Boolean, default: false },
+  ipAddress: { type: String },
+}, { timestamps: true });
+careerApplicationSchema.index({ careerId: 1, createdAt: -1 });
+const CareerApplication = mongoose.model('CareerApplication', careerApplicationSchema);
+
 // ─── Settings Model ────────────────────────────────────────────────────────────
 const settingsSchema = new mongoose.Schema({
   siteName: { type: String, default: 'ASP Cranes' },
@@ -201,4 +215,4 @@ const settingsSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Settings = mongoose.model('Settings', settingsSchema);
 
-module.exports = { Service, Project, Client, FAQ, About, Career, Category, Contact, Settings };
+module.exports = { Service, Project, Client, FAQ, About, Career, CareerApplication, Category, Contact, Settings };

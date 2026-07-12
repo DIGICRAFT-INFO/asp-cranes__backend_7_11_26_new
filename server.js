@@ -168,6 +168,7 @@ app.use('/api/contact', require('./routes/contact'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/faqs', require('./routes/faqs'));
 app.use('/api/careers', require('./routes/careers'));
+app.use('/api/career-applications', require('./routes/career-applications'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/settings', require('./routes/settings'));
