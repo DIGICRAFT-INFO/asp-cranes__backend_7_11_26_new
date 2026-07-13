@@ -14,6 +14,7 @@ const serviceSchema = new mongoose.Schema({
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
   icon: { type: String },
   features: [{ type: String }],
+  externalUrl: { type: String, default: '' }, // optional external link for this service
   isActive: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
   order: { type: Number, default: 0 },

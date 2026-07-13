@@ -38,7 +38,7 @@ router.put('/:id', protect, async (req, res) => {
     const client = await Client.findByIdAndUpdate(req.params.id, req.body, { new: true });
     broadcastNotification({
       type: 'client_updated',
-      title: '🤝 Client Updated',
+      title: ' Client Updated',
       message: `${req.user.name} updated client: "${client.name}".`,
       actor: req.user._id,
       page: 'clients',
