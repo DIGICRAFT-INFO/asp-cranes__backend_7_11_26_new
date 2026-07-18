@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
     // Notify all superadmins + careers-page admins
     broadcastNotification({
       type: 'career_application_received',
-      title: '📋 New Job Application',
+      title: ' New Job Application',
       message: `${name} applied for "${job.title}".`,
       actor: null,
       page: 'careers',

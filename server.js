@@ -50,10 +50,16 @@ const authLimiter = rateLimit({
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 const allowedOrigins = [
+  // Production domains
+  'https://aspcranes.com',
+  'https://www.aspcranes.com',
+  'https://api.aspcranes.com',
+  'http://localhost:3000',
+  'http://localhost:3100',
+  // Dynamic env values (for flexibility)
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
   process.env.HOSTINGER_URL,
-  'https://asp-cranes-frontend.vercel.app',
   // Dev origins only included in non-production environments
   ...(process.env.NODE_ENV !== 'production'
     ? [
@@ -93,9 +99,10 @@ app.use(mongoSanitize());
 // NOTE: this requires a persistent filesystem. It works on a VPS or any
 // "always-on" Node host. It will NOT persist on serverless platforms like
 // Vercel, since their filesystem is read-only/ephemeral outside of /tmp.
-// Static file serving for local dev (persistent filesystem).
-// On Vercel, files are served via GET /api/upload/file/:folder/:filename proxy.
-const IS_VERCEL = !!process.env.VERCEL || process.env.NODE_ENV === 'production';
+// Static file serving for uploaded images/videos/documents.
+// On Vercel: filesystem is read-only, so we skip this (files are served via base64 or Cloudinary).
+// On Hostinger / VPS: serve files from public/uploads directly.
+const IS_VERCEL = !!process.env.VERCEL;
 if (!IS_VERCEL) {
   app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 }
@@ -181,7 +188,7 @@ app.use((req, res) => {
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  console.error(`🔥 [${new Date().toISOString()}] Error:`, err.stack || err.message);
+  console.error(` [${new Date().toISOString()}] Error:`, err.stack || err.message);
 
   res.status(statusCode).json({
     success: false,
