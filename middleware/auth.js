@@ -14,7 +14,11 @@ exports.protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password -refreshToken');
     if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Account no longer exists.',
+        code: 'ACCOUNT_DELETED'
+      });
     }
     // Real-time revoke: if account deactivated, immediately reject
     if (!user.isActive) {
