@@ -12,7 +12,7 @@ const blogSchema = new mongoose.Schema({
   images: [{ type: String }],
   attachments: [attachmentSchema],
   imageCaption: { type: String },
-  category: { type: String, required: true },
+  category: { type: String, default: 'General' },
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
   tags: [{ type: String }],
   author: { type: String, default: 'ASP Cranes Team' },

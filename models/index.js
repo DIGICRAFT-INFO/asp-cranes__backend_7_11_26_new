@@ -143,8 +143,8 @@ const careerSchema = new mongoose.Schema({
   location: { type: String, default: 'On-site' },
   employmentType: {
     type: String,
-    enum: ['Full-time', 'Part-time', 'Contract', 'Internship'],
-    default: 'Full-time',
+    enum: ['Full Time', 'Part Time', 'Contract', 'Internship'],
+    default: 'Full Time',
   },
   experience: { type: String }, // e.g. "2-4 years"
   description: { type: String },
