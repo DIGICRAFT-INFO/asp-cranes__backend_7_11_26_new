@@ -50,22 +50,21 @@ const authLimiter = rateLimit({
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  // Production domains
+  // Production — Render backend + Vercel frontend
+  'https://asp-cranes-frontend-7-11-26-new.vercel.app',
+  'https://asp-cranes-backend-7-11-26-new.onrender.com',
+  // Production — Hostinger custom domain
   'https://aspcranes.com',
   'https://www.aspcranes.com',
   'https://api.aspcranes.com',
-  'http://localhost:3000',
-  'http://localhost:3100',
-  // Dynamic env values (for flexibility)
+  // Dynamic env values (for flexibility — set in Render/Hostinger dashboard)
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
   process.env.HOSTINGER_URL,
   // Dev origins only included in non-production environments
   ...(process.env.NODE_ENV !== 'production'
     ? [
-        // Extra origins via env (comma-separated)
         ...(process.env.DEV_ORIGINS ? process.env.DEV_ORIGINS.split(',').map(o => o.trim()) : []),
-        // Common local dev ports
         'http://localhost:3000',
         'http://localhost:3100',
       ]
