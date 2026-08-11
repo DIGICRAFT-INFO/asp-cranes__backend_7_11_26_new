@@ -11,6 +11,10 @@ const mongoSanitize = require('express-mongo-sanitize');
 
 const app = express();
 
+// ─── Trust Proxy (required for Render, Vercel, Heroku, Hostinger behind reverse proxy) ──
+// Without this, express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', 1);
+
 // ─── JWT Secret Strength Validation ──────────────────────────────────────────
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('🔐 [FATAL SECURITY WARNING] JWT_SECRET is missing or shorter than 32 characters!');
