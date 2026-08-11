@@ -80,6 +80,24 @@ async function seed() {
     { title: 'Material Handling', description: 'Complete material handling solutions including lifting, positioning, and movement of heavy materials.', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800', icon: 'Package', order: 5 },
     { title: 'Jacking (Machine Jacking & Leveling)', description: 'Accurate machine jacking and leveling services for installation, alignment, and relocation of industrial machinery.', image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=800', icon: 'Tool', order: 6 },
     { title: 'Operations & Maintenance (O&M)', description: 'Dedicated O&M services for long-term projects, ensuring equipment uptime, safety compliance, and operational efficiency.', image: 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800', icon: 'Shield', order: 7 },
+    {
+      title: 'Wind Turbine Installation & Logistics',
+      subtitle: 'Specialized Crane Solutions for Renewable Energy',
+      description: 'ASP Cranes provides comprehensive crane and logistics solutions for wind turbine installations across India. From nacelle and tower section lifts to blade positioning, our specialized fleet — including high-capacity crawler cranes and truck-mounted telescopic cranes — handles every phase of wind farm construction with precision.\n\nWe supply main crane packages, yard cranes, and unloading cranes, managing the full logistics chain from component receipt at port to final installation at turbine site. Our certified operators are trained in wind energy site protocols, ensuring zero-compromise safety at height.',
+      image: 'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800',
+      icon: 'Wind',
+      order: 8,
+      isFeatured: true,
+      features: [
+        'Main Crane Package — Nacelle, hub, and blade lifting up to 350 MT',
+        'Tower Section Erection — Precise stacking of tower segments',
+        'Blade Logistics — Specialized lifting and positioning of wind blades',
+        'Yard & Unloading Cranes — Port-to-site component handling',
+        'Crawler & Telescopic Cranes — All-terrain, heavy-capacity fleet',
+        'Certified Wind Energy Operators — Trained to IEC and OSHA standards',
+        'Full O&M Support — Ongoing maintenance crane availability on-site',
+      ],
+    },
   ];
   const services = servicesRaw.map(s => ({ ...s, slug: slugify(s.title, { lower: true, strict: true }) }));
   await Service.insertMany(services);
