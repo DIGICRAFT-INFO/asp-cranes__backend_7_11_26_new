@@ -26,7 +26,10 @@ if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 3
 }
 
 // ─── Helmet Security Headers ──────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
+}));
 // HSTS: only in production (Vercel handles TLS termination)
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet.hsts({
@@ -107,7 +110,12 @@ app.use(mongoSanitize());
 // On Hostinger / VPS: serve files from public/uploads directly.
 const IS_VERCEL = !!process.env.VERCEL;
 if (!IS_VERCEL) {
-  app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+  app.use('/uploads', (req, res, next) => {
+    // Allow cross-origin access to uploaded images/files
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+  }, express.static(path.join(__dirname, 'public', 'uploads')));
 }
 
 // ─── MongoDB Connection (cached across serverless invocations) ───────────────
