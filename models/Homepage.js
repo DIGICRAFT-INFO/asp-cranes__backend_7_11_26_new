@@ -13,6 +13,12 @@ const homepageSchema = new mongoose.Schema({
       image: { type: String },
       order: { type: Number, default: 0 },
       isActive: { type: Boolean, default: true },
+      // Layout & typography controls
+      contentX: { type: String, enum: ['left', 'center', 'right'], default: 'left' },
+      contentY: { type: String, enum: ['top', 'middle', 'bottom'], default: 'middle' },
+      textAlign: { type: String, enum: ['left', 'center', 'right'], default: 'left' },
+      titleSize: { type: String, enum: ['sm', 'md', 'lg', 'xl', 'xxl'], default: 'lg' },
+      overlayOpacity: { type: Number, default: 65, min: 0, max: 100 },
     }]
   },
   about: {
