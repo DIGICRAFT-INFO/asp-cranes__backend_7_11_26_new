@@ -171,6 +171,14 @@ const contactSchema = new mongoose.Schema({
   isRead: { type: Boolean, default: false },
   isReplied: { type: Boolean, default: false },
   ipAddress: { type: String },
+  replyHistory: [{
+    subject: { type: String },
+    body: { type: String },
+    cc: { type: String },
+    bcc: { type: String },
+    sentBy: { type: String },
+    sentAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 const Contact = mongoose.model('Contact', contactSchema);
 
